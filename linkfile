@@ -2,4 +2,6 @@
 obj/timing.o
 obj/init.o
 obj/graphics.o
+obj/notes.o
+obj/misc.o
 obj/input.o

@@ -10,6 +10,8 @@
 .include "vcs.inc"
 .include "macro.inc"
 
+.def Scratchpad $80
+
 .MACRO incv2bpp ARGS FILE WIDTH ;include a 2bpp row-major image, but convert to column-major
 	.fopen FILE HANDLE
 	.fsize HANDLE SIZE

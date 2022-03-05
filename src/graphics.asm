@@ -6,17 +6,23 @@ wScreenDigit: db
 wScreenDigit2: db
 wScreenDigit3: db
 wScreenDigit4: db
+
+.ENDS
+
+.ENUM Scratchpad
 wScreenDigitPtr: dw
 wScreenDigitPtr2: dw
 wScreenDigitPtr3: dw
 wScreenDigitPtr4: dw
 wTempLineCount: db ;temorary counter for when registers are full
-
-.ENDS
+.ENDE
 
 .slot "ROM"
 .SECTION "Render", FREE
 RenderScreen:
+    ;input calls are spread throughout the drawing because they need to be at least 7 scanlines apart
+    jsr ProcessInput1
+
     ; start by accurately positioning and configuring Player 0
     lda #%10
     sta CTRLPF ;scoreboard mode
@@ -85,7 +91,25 @@ RenderScreen:
     dey
     bne @drawnumbers
 
+    ;enable VBLANK
     sta WSYNC
+    lda #%10
+    sta VBLANK
+
+    ;move on with input
+    jsr ProcessInput2
+
+    .rept 7
+    sta WSYNC
+    .endr
+
+    jsr ProcessInput3
+
+    .rept 7
+    sta WSYNC
+    .endr
+
+    jsr ProcessInput4
 
 DelayRTS: ;useful to jsr to as a delay
     rts

@@ -24,6 +24,12 @@ NextFrame
 FinishFrame
 	lda #%10 ;enable blanking
 	sta VBLANK
+
+	;now process stuff
+	jsr ProcessNotes
+
+
+
 @waitTimer
 	sta WSYNC
 	lda #%10
