@@ -2,14 +2,15 @@
 
 
 .RAMSECTION "graphics vars" SLOT "RAM"
-wScreenDigit: db
-wScreenDigit2: db
-wScreenDigit3: db
-wScreenDigit4: db
+
 
 .ENDS
 
 .ENUM Scratchpad
+wScreenDigit: db
+wScreenDigit2: db
+wScreenDigit3: db
+wScreenDigit4: db
 wScreenDigitPtr: dw
 wScreenDigitPtr2: dw
 wScreenDigitPtr3: dw
@@ -34,10 +35,24 @@ RenderScreen:
     sta PF0
     sta PF1
     sta PF2
-    lda #6
+
+    ;set the first 2 digits
+    lda wCurrentNoteA
+    and #%11111 ; isolate the period
+    tax
+    inx ;increment since it's off by one
+    lda.w BinToBCD,x
+    lsr
+    lsr
+    lsr
+    lsr
     sta wScreenDigit
-    lda #9
+    lda.w BinToBCD,x
+    and #$0f
     sta wScreenDigit2
+
+
+
     lda #4
     sta wScreenDigit3
     lda #2
@@ -124,6 +139,15 @@ DelayRTS: ;useful to jsr to as a delay
 NumberData:
     incvr2bpp "res/numbers.1bpp", 80
 .ENDS
+
+.SECTION "Frequency to BCD conversion table", FREE, ALIGN 64
+;this table is used to convert binary numbers 0-32 to BCD
+BinToBCD:
+    .rept 33 INDEX I
+        .db ((I/10)<<4) + I#10
+    .endr
+.ENDS
+    
 
 .SECTION "Bit reverse LUT", FREE, ALIGN 256
 BitReverseLUT:
