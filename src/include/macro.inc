@@ -56,19 +56,19 @@ VERSION_MACRO         = 106
 .macro SLEEP            ;usage: SLEEP n (n>1)
 .equ CYCLES\@     \1
 
-                IF CYCLES\@ < 2
-                    ECHO "MACRO ERROR: 'SLEEP': Duration must be > 1"
-                    ERR
-                ENDIF
+                .IF CYCLES\@ < 2
+                    .print "MACRO ERROR: 'SLEEP': Duration must be > 1"
+                    
+                .ENDIF
 
-                IF CYCLES\@ & 1
+                .IF CYCLES\@ & 1
                      nop 0
 .redef        CYCLES\@       CYCLES\@ - 3
-                ENDIF
+                .ENDIF
             
-                REPEAT CYCLES\@ / 2
+                .REPEAT CYCLES\@ / 2
                     nop
-                REPEND
+                .ENDR
 .ENDM
 
 ;-------------------------------------------------------------------------------

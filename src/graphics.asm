@@ -4,75 +4,90 @@
 .RAMSECTION "graphics vars" SLOT "RAM"
 wScreenDigit: db
 wScreenDigit2: db
+wScreenDigit3: db
+wScreenDigit4: db
 wScreenDigitPtr: dw
 wScreenDigitPtr2: dw
+wScreenDigitPtr3: dw
+wScreenDigitPtr4: dw
+wTempLineCount: db ;temorary counter for when registers are full
+
 .ENDS
 
 .slot "ROM"
 .SECTION "Render", FREE
 RenderScreen:
     ; start by accurately positioning and configuring Player 0
-    lda #7
-    sta NUSIZ0
-    sta NUSIZ1
+    lda #%10
+    sta CTRLPF ;scoreboard mode
     lda #$42
     sta COLUP0
+    lda #$78
     sta COLUP1
     lda #0
-    sta GRP0
-    nop
-    nop
-    sta RESP0
-    nop
-    lda #0
-    sta GRP1
-    sta RESP1
+    sta PF0
+    sta PF1
+    sta PF2
     lda #6
     sta wScreenDigit
     lda #9
     sta wScreenDigit2
-    lda wScreenDigit
+    lda #4
+    sta wScreenDigit3
+    lda #2
+    sta wScreenDigit4
+    
+    ldx #3
+    ldy #6
+@shiftloop
+    lda wScreenDigit,x
     asl
     asl
-    asl ;multiply by 8
-    sta wScreenDigitPtr
-    ;now do the same for the other number
-    lda wScreenDigit2
     asl
-    asl
-    asl
-    sta wScreenDigitPtr2
+    sta wScreenDigitPtr,y
+    dey
+    dey
+    dex
+    bpl @shiftloop
 
     lda #>NumberData
     sta wScreenDigitPtr + 1
     sta wScreenDigitPtr2 + 1
+    sta wScreenDigitPtr3 + 1
+    sta wScreenDigitPtr4 + 1
     
 
 
-    ldy #8
+    lda #0
+    sta VBLANK
+    ldy #7 
+@drawnumbers
+    lda #8
+    sta wTempLineCount
+@nextLine
     sta WSYNC
-    sty VBLANK
-@drawnumber
     lda (wScreenDigitPtr),y
-    sta GRP0
-    lda (wScreenDigitPtr2),y
-    sta GRP1
-    ldx #8
-@scanlineLoop
-    sta WSYNC
-    dex
-    bne @scanlineLoop
-    dey
-    bne @drawnumber
-
-
-
-
-
-
-
-
+    sta PF1
+    lax_ind_y wScreenDigitPtr2
+    lda.w BitReverseLUT,x
+    sta PF2 ;cycle 20
+    lax_ind_y wScreenDigitPtr4
+    lda.w BitReverseLUT,x 
+    tax 
+    lda (wScreenDigitPtr3),y ;cycle 36
+    SLEEP 2
+    sta PF1 ;cycle 41
+    SLEEP 6
+    stx PF2 ;cycle 50
     
+    dec wTempLineCount
+    bne @nextLine
+    dey
+    bne @drawnumbers
+
+    sta WSYNC
+
+DelayRTS: ;useful to jsr to as a delay
     rts
 
 
@@ -80,14 +95,17 @@ RenderScreen:
 
 .ENDS
 
-.SECTION "Number font data", FREE, ALIGN 256 OFFSET 1 
-;these graphics will be accessed with decrementing pointers, 
-;so offset by 1 because the index range is 8-1 rather than 0-7
+.SECTION "Number font data", FREE, ALIGN 256 
+;these graphics will be accessed with decrementing pointers
 NumberData:
     incvr2bpp "res/numbers.1bpp", 80
+.ENDS
 
-
-
+.SECTION "Bit reverse LUT", FREE, ALIGN 256
+BitReverseLUT:
+    .rept 256 INDEX I
+        .dbm bitReverse I
+    .endr
 .ENDS
 
 

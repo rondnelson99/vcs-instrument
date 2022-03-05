@@ -2,3 +2,4 @@
 obj/timing.o
 obj/init.o
 obj/graphics.o
+obj/input.o

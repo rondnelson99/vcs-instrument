@@ -35,5 +35,16 @@
 	.ENDR
 .ENDM
 
+.MACRO bitReverse ;reverse the order of bits in the byte
+	.redef _out 0
+	.rept 8 INDEX i
+		.redef _out (_out>>1)|((\1<<i)&$80)
+	.endr
+.ENDM
+
+.MACRO lax_ind_y
+	.db $b3
+	.db \1
+.endm
 
 
