@@ -89,10 +89,10 @@ RenderScreen:
     sta WSYNC
     lda (wScreenDigitPtr),y
     sta PF1
-    lax_ind_y wScreenDigitPtr2
+    lax (wScreenDigitPtr2),y
     lda.w BitReverseLUT,x
     sta PF2 ;cycle 20
-    lax_ind_y wScreenDigitPtr4
+    lax (wScreenDigitPtr4),y
     lda.w BitReverseLUT,x 
     tax 
     lda (wScreenDigitPtr3),y ;cycle 36
