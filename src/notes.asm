@@ -8,7 +8,7 @@ wCurrentNoteB: db
 ;instruments: 0 = pure div2, 1 = pure div6, 2 = buzzy div15
 
 
-.MACRO IntervalNote ARGS oldnote intervalMul intervalDiv ;oldnote is in wCurrentNote format, 
+/*.MACRO IntervalNote ARGS oldnote intervalMul intervalDiv ;oldnote is in wCurrentNote format, 
     ;interval is a fraction where 2/3 = *up* a fifth. Supply the numerator and denominator as integers.
     
     ;first, check if the interval can be made using the current instrument
@@ -95,7 +95,7 @@ wCurrentNoteB: db
         .endif
     .endif 
 .ENDM
-
+*/
 
 .SECTION "note routine", FREE
 ProcessNotes:
@@ -143,14 +143,14 @@ ProcessNotes:
 
 
 
-    lda #$c
+    lda #$6
     sta AUDC0
     rts
 .ENDS
 
-.SECTION "up octave table", FREE, ALIGN 128
+/*.SECTION "up octave table", FREE, ALIGN 128
 UpOctaveTable:
 .rept 128 INDEX I
     IntervalNote I 44 2
 .endr
-.ENDS
+.ENDS*/

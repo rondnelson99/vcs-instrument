@@ -7,10 +7,6 @@
 .ENDS
 
 .ENUM Scratchpad
-wScreenDigit: db
-wScreenDigit2: db
-wScreenDigit3: db
-wScreenDigit4: db
 wScreenDigitPtr: dw
 wScreenDigitPtr2: dw
 wScreenDigitPtr3: dw
@@ -24,7 +20,7 @@ RenderScreen:
     ;input calls are spread throughout the drawing because they need to be at least 7 scanlines apart
     jsr ProcessInput1
 
-    ; start by accurately positioning and configuring Player 0
+    ; configure graphics stuff
     lda #%10
     sta CTRLPF ;scoreboard mode
     lda #$42
@@ -41,36 +37,24 @@ RenderScreen:
     and #%11111 ; isolate the period
     tax
     inx ;increment since it's off by one
+    lda.w BinToBCD,x ; now first digit is in top 4 bis of A, but it needs to be in bits 3-6
+    lsr 
+    and #%01111000 ;isolate the digit
+    sta wScreenDigitPtr
     lda.w BinToBCD,x
-    lsr
-    lsr
-    lsr
-    lsr
-    sta wScreenDigit
-    lda.w BinToBCD,x
-    and #$0f
-    sta wScreenDigit2
+    and #$0F ;isolate the digit
+    asl
+    asl 
+    asl ; get it in bits 3-6
+    sta wScreenDigitPtr2
 
 
 
-    lda #4
-    sta wScreenDigit3
-    lda #2
-    sta wScreenDigit4
+    lda #6 << 3
+    sta wScreenDigitPtr3
+    lda #9 << 3
+    sta wScreenDigitPtr4
     
-    ldx #3
-    ldy #6
-@shiftloop
-    lda wScreenDigit,x
-    asl
-    asl
-    asl
-    sta wScreenDigitPtr,y
-    dey
-    dey
-    dex
-    bpl @shiftloop
-
     lda #>NumberData
     sta wScreenDigitPtr + 1
     sta wScreenDigitPtr2 + 1
