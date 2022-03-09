@@ -148,9 +148,7 @@ ProcessNotes:
     rts
 .ENDS
 
-/*.SECTION "up octave table", FREE, ALIGN 128
-UpOctaveTable:
-.rept 128 INDEX I
-    IntervalNote I 44 2
-.endr
-.ENDS*/
+.SECTION "interval tables", FREE, ALIGN 128
+IntervalTables:
+.INCBIN	"res/intervaltables.bin"
+.ENDS

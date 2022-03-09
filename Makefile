@@ -118,6 +118,10 @@ res/%.1bpp: src/tools/pack1bpp.py res/%.data
 	@$(MKDIR_P) $(@D)
 	$^ $@
 
+res/intervaltables.bin: src/tools/intervaltable.py
+	@$(MKDIR_P) $(@D)
+	$^ $@
+
 # Catch non-existent files
 # KEEP THIS LAST!!
 %:
