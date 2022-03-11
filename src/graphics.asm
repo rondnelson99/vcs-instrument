@@ -67,7 +67,7 @@ RenderScreen:
     sta VBLANK
     ldy #7 
 @drawnumbers
-    lda #8
+    lda #7
     sta wTempLineCount
 @nextLine
     sta WSYNC

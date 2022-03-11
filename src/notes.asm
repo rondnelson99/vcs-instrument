@@ -12,6 +12,8 @@ INTERVALS_UP_OCTAVE: ds $80
 INTERVALS_DOWN_OCTAVE: ds $80
 INTERVALS_UP_FIFTH: ds $80
 INTERVALS_DOWN_FIFTH: ds $80
+INTERVALS_UP_MAJOR_THIRD: ds $80
+INTERVALS_DOWN_MAJOR_THIRD: ds $80
 .ende
 
 .SECTION "note routine", FREE
@@ -79,6 +81,26 @@ ProcessNotes:
     sta wCurrentNoteA
 @noFifthUp
 
+    ; test for up/down major third (keys 7 and 9)
+    lda #%10000000 ; mask for 7
+    bit wPressedKeys + 2
+    beq @noMajorThirdDown
+    ; use table to descend major third
+    lda.w (IntervalTables + INTERVALS_DOWN_MAJOR_THIRD),x
+    sta wCurrentNoteA
+@noMajorThirdDown
+
+    lda #%00001000 ; mask for 9
+    bit wPressedKeys + 2
+    beq @noMajorThirdUp
+    ; use table to ascend major third
+    lda.w (IntervalTables + INTERVALS_UP_MAJOR_THIRD),x
+    sta wCurrentNoteA
+@noMajorThirdUp
+
+
+
+
 
     ;write the new frequency
     lda wCurrentNoteA
@@ -96,13 +118,16 @@ ProcessNotes:
 
  
     ;check if the note should actually be played
-    ldx #0
+    ldx #15 ; max volume
     lda #%10111111 ;mask for 1 3 4 6 5 * #
     bit wHeldKeys
-    beq @noPlay
+    bne @Play
+    lda #%10001000 ;mask for 7 9
+    bit wHeldKeys + 2
+    bne  @Play
     ;play the note
-    ldx #15 ;max volume
-@noPlay
+    ldx #0 ;mute
+@Play
     stx AUDV0
 
 
