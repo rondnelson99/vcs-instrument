@@ -7,100 +7,19 @@ wCurrentNoteB: db
 
 ;instruments: 0 = pure div2, 1 = pure div6, 2 = buzzy div15
 
-
-/*.MACRO IntervalNote ARGS oldnote intervalMul intervalDiv ;oldnote is in wCurrentNote format, 
-    ;interval is a fraction where 2/3 = *up* a fifth. Supply the numerator and denominator as integers.
-    
-    ;first, check if the interval can be made using the current instrument
-    ; isolate the frequency of the old note
-
-    ;bit 7 indicates that the ratio can be formed perfectly
-
-
-
-    .redef oldfreq (oldnote & %11111) + 1
-
-    .print "trying to generate interval from oldfreq ", oldfreq, "\n"
-
-    .redef newfreq (oldfreq * intervalMul / intervalDiv)
-
-    .print "with the current instrument, the newfreq would be ", newfreq, "\n"
-
-    .if ((oldfreq * intervalMul # intervalDiv == 0) && (newfreq <= 32))
-        .print "the newfreq is valid, so use that\n\n"
-
-        ; if so, we can use the current instrument
-        .db (oldnote & %01100000) + (newfreq - 1) + %10000000
-    .else
-        .print "the interval does not work with the current instrument \n"
-        ;if not, then we check the other instruments one by one until we find a perfect match
-        .redef oldinst (oldnote >> 5 | %11)
-        ; convert newfreq a multiple of the fundamental 30khz
-        .if oldinst == 0 ;pure div2
-            .print oldfreq, intervalMul, intervalDiv, "\n"
-            .redef newfreq ((oldfreq * intervalMul / intervalDiv) * 2)
-        .elif oldinst == 1 ;pure div6
-            .redef newfreq ((oldfreq * intervalMul / intervalDiv) * 6)
-        .elif oldinst == 2 ;buzzy div15
-            .redef newfreq ((oldfreq * intervalMul / intervalDiv) * 15)
-        .endif
-
-        .print "the frequency is 30khz / ", newfreq, "\n"
-
-        ;now try each instrument one by one until we find a perfect match
-        .if (newfreq # 2 == 0) && (newfreq / 2 <= 32)
-            .print "match found for div2\n\n"
-            .db (newfreq / 2 - 1) + %10000000
-        .elif (newfreq # 6 == 0) && (newfreq / 6 <= 32)
-            .print "match found for div6\n\n"
-            .db (newfreq / 6 - 1) + %10100000
-        .elif (newfreq # 15 == 0) && (newfreq / 15 <= 32)
-            .print "match found for div15\n\n"
-            .db (oldfreq / 15 - 1) + %11000000
-        .else
-            .print "no match found\n"
-            .print "finding best approximation\n"
-            ; in tis case, there is no perfect match, so we find the closest one with all instruments
-            ; find the closest div2
-            .redef bestfreq $ee ;default
-            .redef error 99999
-            .if (newfreq / 2 <= 32)
-                .redef bestfreq (newfreq / 2 + 0.5) & %11111
-                .redef error newfreq / 2 - bestfreq
-                .redef bestinst 0
-            .endif
-            .if (newfreq / 6 <= 32)
-                .redef possiblebestfreq (newfreq / 6 + 0.5)  & %11111
-                .redef possibleerror (newfreq / 6 - bestfreq)
-                .if possibleerror < error
-                    .redef bestfreq possiblebestfreq
-                    .redef error possibleerror
-                    .redef bestinst 1
-                .endif
-            .endif
-            .if (newfreq / 15 <= 32)
-                .redef possiblebestfreq (newfreq / 15 + 0.5) & %11111
-                .redef possibleerror newfreq / 15 - bestfreq
-                .if (possibleerror < error)
-                    .redef bestfreq possiblebestfreq
-                    .redef error possibleerror
-                    .redef bestinst 2
-                .endif
-            .endif
-
-            .print "bestfreq is ", bestfreq, "\n"
-            .print "bestinst is ", bestinst, "\n\n"
-            ; now write the byte representing the compromised note
-            ;.db bestinst << 5 + bestfreq - 1
-        .endif
-    .endif 
-.ENDM
-*/
+.enum 0
+INTERVALS_UP_OCTAVE: ds $80
+INTERVALS_DOWN_OCTAVE: ds $80
+INTERVALS_UP_FIFTH: ds $80
+INTERVALS_DOWN_FIFTH: ds $80
+.ende
 
 .SECTION "note routine", FREE
 ProcessNotes:
     ;check if Note A needs to be adjusted
-    ldx wCurrentNoteA
+    lda wCurrentNoteA
+    and #%01111111
+    tax
     ; * and # are increment and decrement
     lda #%1 ; mask for #
     bit wPressedKeys
@@ -126,14 +45,59 @@ ProcessNotes:
     stx wCurrentNoteA
 @noIncrement
 
+    ; test for up/down octave (keys 1 and 3)
+    lda #%10000000 ; mask for 1
+    bit wPressedKeys
+    beq @noOctaveDown
+    ; use table to descend octave
+    lda.w (IntervalTables + INTERVALS_DOWN_OCTAVE),x
+    sta wCurrentNoteA
+@noOctaveDown
+
+    lda #%00100000 ; mask for 3
+    bit wPressedKeys
+    beq @noOctaveUp
+    ; use table to ascend octave
+    lda.w (IntervalTables + INTERVALS_UP_OCTAVE),x
+    sta wCurrentNoteA
+@noOctaveUp
+
+    ; test for up/down fifth (keys 4 and 6)
+    lda #%00010000 ; mask for 4
+    bit wPressedKeys
+    beq @noFifthDown
+    ; use table to descend fifth
+    lda.w (IntervalTables + INTERVALS_DOWN_FIFTH),x
+    sta wCurrentNoteA
+@noFifthDown
+
+    lda #%00000100 ; mask for 6
+    bit wPressedKeys
+    beq @noFifthUp
+    ; use table to ascend fifth
+    lda.w (IntervalTables + INTERVALS_UP_FIFTH),x
+    sta wCurrentNoteA
+@noFifthUp
+
 
     ;write the new frequency
     lda wCurrentNoteA
     sta AUDF0
+
+    ;isolate the instrument
+    rol
+    rol
+    rol
+    rol
+    and #%11
+    tax
+    lda.w InstrumentTable,x
+    sta AUDC0
+
  
     ;check if the note should actually be played
     ldx #0
-    lda #%00001011 ;mask for '5','*','#'
+    lda #%10111111 ;mask for 1 3 4 6 5 * #
     bit wHeldKeys
     beq @noPlay
     ;play the note
@@ -142,10 +106,12 @@ ProcessNotes:
     stx AUDV0
 
 
-
-    lda #$6
-    sta AUDC0
     rts
+.ENDS
+
+.SECTION "instrument table", FREE, ALIGN 4
+InstrumentTable:
+    .db $4, $c, $1, $6
 .ENDS
 
 .SECTION "interval tables", FREE, ALIGN 128

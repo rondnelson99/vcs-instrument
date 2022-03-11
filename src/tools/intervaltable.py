@@ -34,11 +34,13 @@ intervals = (
 def interval_byte( oldNote, numerator, denominator):
     # isolate the divider
     divider = (oldNote & 0x1F) + 1
+    # isolate the instrument
+    instrument = (oldNote >> 5) & 0x03
     # calculate the period based on the divider and the instrument
-    period = (divider * inst_div[(oldNote >> 5) & 0b11])
+    period = (divider * inst_div[instrument])
 
     # if we can, we'll use the original instrument to make the interval. That will sound better.
-    if ((divider * numerator % denominator == 0) and (period * numerator // denominator <= 32)):
+    if ((divider * numerator % denominator == 0) and (divider * numerator // denominator <= 32)):
         newDivider = divider * numerator // denominator
         # return the new note, which has the new divider, original instrument and bit 7 set
         return ((newDivider - 1) & 0x1F) | (oldNote & 0b01100000) | 0x80
@@ -53,8 +55,46 @@ def interval_byte( oldNote, numerator, denominator):
                 # return the new note, which has the new divider, new instrument and bit 7 set
                 return ((int(possiblePeriod) - 1) & 0x1F) | (i << 5) | 0x80
             # if we stil can't make the interval, try the next instrument
-        #if none of those worked, rereturn a constant
-        return 0x00
+        print("interval not found: instrument: ", instrument, " divider: ", divider, " interval: ", numerator, "/", denominator)
+        # if none of those worked, then we can't perfectly make the interval, but we provide the closest approximation
+        # we need to test all the instruments to see which one gives the closest approximation
+        bestDivider = divider # if we can't find anything in range, keep the current note as default
+        bestInstrument = instrument
+        # calculate the optimal period that would make the interval
+        perfectPeriod = period * numerator / denominator
+        print ("perfect period: ", perfectPeriod)
+         # this will hold the the difference in period between the perfect interval and our best approximation
+        besterror = 999999999
+
+        for i in range(4):
+            print("testing instrument: ", i)
+            # find the closest approximation with the current instrument, if it's in that instrument's range
+            possibleDivider = round(period / inst_div[i] * numerator / denominator)
+            possiblePeriod = possibleDivider * inst_div[i]
+            print("possible divider: ", possibleDivider)
+            print("possible period: ", possiblePeriod)
+            # test whether it's 1 <= possiblePeriod <= 32
+            if (1 <= possibleDivider <= 32):
+                # calculate the error between the perfect interval and the approximation
+                error = abs(perfectPeriod - possiblePeriod)
+                print("error: ", error)
+                
+                # if this is the best error so far, save the period and the instrument
+                if (error < besterror):
+                    print("new best error")
+                    bestDivider = possibleDivider
+                    bestInstrument = i
+                    besterror = error
+        # return the new note, which has the new divider, new instrument and bit 7 CLEARED (because we can't perfect the interval)
+        print()
+        return ((bestDivider - 1)) | (bestInstrument << 5)
+
+                
+                
+
+
+
+
 
 def interval_table(numerator,denominator): 
     # this function generates the table of the notes resulting from an interval applied to all possible source notes

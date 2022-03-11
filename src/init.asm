@@ -8,7 +8,7 @@ Start	CLEAN_START
 	sta.w SWACNT
 	lda #%11101110 ;bottom row of both keypads
     sta.w SWCHA
-	lda #31
+	lda #%00011111
 	sta wCurrentNoteA
 
 
