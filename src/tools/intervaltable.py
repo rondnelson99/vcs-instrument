@@ -16,10 +16,22 @@ inst_div = (2, 6, 15, 31)
 intervals = (
     (1,2), # up an octave
     (2,1), # down an octave
+    (8,15), # up a major seventh
+    (15,8), # down a major seventh
+    (3,5), # up a major sixth
+    (5,3), # down a major sixth
+    (5,8), # up a minor sixth
+    (8,5), # down a minor sixth 
     (2,3), # up a fifth
     (3,2), # down a fifth
+    (3,4), # up a fourth
+    (4,3), # down a fourth
     (4,5), # up a major third
     (5,4), # down a major third
+    (5,6), # up a minor third
+    (6,5), # down a minor third
+    (8,9), # up a major second
+    (9,8), # down a major second
 )
 
 # the main part of this script is the function that generates the byte representing the note 

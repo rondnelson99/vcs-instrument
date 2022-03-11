@@ -1,6 +1,7 @@
 .include "defines.asm"
 
 .RAMSECTION "Note RAM" SLOT "RAM"
+wRootA: db
 wCurrentNoteA: db ;bits 0-4 are period, bit 5,6 are instrument, bit 7 is note on
 wCurrentNoteB: db
 .ENDS
@@ -8,21 +9,24 @@ wCurrentNoteB: db
 ;instruments: 0 = pure div2, 1 = pure div6, 2 = buzzy div15
 
 .enum 0
-INTERVALS_UP_OCTAVE: ds $80
-INTERVALS_DOWN_OCTAVE: ds $80
-INTERVALS_UP_FIFTH: ds $80
-INTERVALS_DOWN_FIFTH: ds $80
-INTERVALS_UP_MAJOR_THIRD: ds $80
-INTERVALS_DOWN_MAJOR_THIRD: ds $80
+INTERVALS_OCTAVE ds $100
+INTERVALS_MAJOR_SEVENTH ds $100
+INTERVALS_MAJOR_SIXTH ds $100
+INTERVALS_MINOR_SIXTH ds $100
+INTERVALS_FIFTH ds $100
+INTERVALS_FOURTH ds $100
+INTERVALS_MAJOR_THIRD ds $100
+INTERVALS_MINOR_THIRD ds $100
+INTERVALS_MAJOR_SECOND ds $100
 .ende
 
 .SECTION "note routine", FREE
 ProcessNotes:
-    ;check if Note A needs to be adjusted
-    lda wCurrentNoteA
+    ; process note A
+    lda wRootA
     and #%01111111
     tax
-    ; * and # are increment and decrement
+    /*; * and # are increment and decrement
     lda #%1 ; mask for #
     bit wPressedKeys
     beq @noDecrement
@@ -46,61 +50,86 @@ ProcessNotes:
     inx
     stx wCurrentNoteA
 @noIncrement
+    */
 
-    ; test for up/down octave (keys 1 and 3)
+    ; test for octave (key 3)
+    lda #%00100000 ; mask for 1
+    bit wPressedKeys
+    beq @noOctave
+    ; use table to ascend octave
+    lda.w (IntervalTables + INTERVALS_OCTAVE),x
+    sta wCurrentNoteA
+@noOctave
+
+    ; test for major seventh (key 2)
+    lda #%01000000 ; mask for 2
+    bit wPressedKeys
+    beq @noMajorSeventh
+    ; use table to ascend major seventh
+    lda.w (IntervalTables + INTERVALS_MAJOR_SEVENTH),x
+    sta wCurrentNoteA
+@noMajorSeventh
+
+    ; test for major sixth (key 1)
     lda #%10000000 ; mask for 1
     bit wPressedKeys
-    beq @noOctaveDown
-    ; use table to descend octave
-    lda.w (IntervalTables + INTERVALS_DOWN_OCTAVE),x
+    beq @noMajorSixth
+    ; use table to ascend major sixth
+    lda.w (IntervalTables + INTERVALS_MAJOR_SIXTH),x
     sta wCurrentNoteA
-@noOctaveDown
+@noMajorSixth
 
-    lda #%00100000 ; mask for 3
+    ; test for fifth (key 5)
+    lda #%00001000 ; mask for 5
     bit wPressedKeys
-    beq @noOctaveUp
-    ; use table to ascend octave
-    lda.w (IntervalTables + INTERVALS_UP_OCTAVE),x
+    beq @noFifth
+    ; use table to ascend fifth
+    lda.w (IntervalTables + INTERVALS_FIFTH),x
     sta wCurrentNoteA
-@noOctaveUp
+@noFifth
 
-    ; test for up/down fifth (keys 4 and 6)
+    ; test for fourth (key 4)
     lda #%00010000 ; mask for 4
     bit wPressedKeys
-    beq @noFifthDown
-    ; use table to descend fifth
-    lda.w (IntervalTables + INTERVALS_DOWN_FIFTH),x
+    beq @noFourth
+    ; use table to ascend fourth
+    lda.w (IntervalTables + INTERVALS_FOURTH),x
     sta wCurrentNoteA
-@noFifthDown
+@noFourth
 
-    lda #%00000100 ; mask for 6
-    bit wPressedKeys
-    beq @noFifthUp
-    ; use table to ascend fifth
-    lda.w (IntervalTables + INTERVALS_UP_FIFTH),x
+    ; test for major third (key 8)
+    lda #%00100000 ; mask for 8 A
+    bit wPressedKeys + 2
+    beq @noMajorThird
+    ; use table to ascend major third
+    lda.w (IntervalTables + INTERVALS_MAJOR_THIRD),x
     sta wCurrentNoteA
-@noFifthUp
+@noMajorThird
 
-    ; test for up/down major third (keys 7 and 9)
+    ; test for minor third (key 7)
     lda #%10000000 ; mask for 7
     bit wPressedKeys + 2
-    beq @noMajorThirdDown
-    ; use table to descend major third
-    lda.w (IntervalTables + INTERVALS_DOWN_MAJOR_THIRD),x
+    beq @noMinorThird
+    ; use table to ascend minor third
+    lda.w (IntervalTables + INTERVALS_MINOR_THIRD),x
     sta wCurrentNoteA
-@noMajorThirdDown
+@noMinorThird
 
-    lda #%00001000 ; mask for 9
+    ; test for major second (key *)
+    lda #%00000010 ; mask for *
+    bit wPressedKeys 
+    beq @noMajorSecond
+    ; use table to ascend major second
+    lda.w (IntervalTables + INTERVALS_MAJOR_SECOND),x
+    sta wCurrentNoteA
+@noMajorSecond
+
+    ; test for root (key 0)
+    lda #%00000010 ; mask for 0 A
     bit wPressedKeys + 2
-    beq @noMajorThirdUp
-    ; use table to ascend major third
-    lda.w (IntervalTables + INTERVALS_UP_MAJOR_THIRD),x
-    sta wCurrentNoteA
-@noMajorThirdUp
-
-
-
-
+    beq @noRoot
+    stx wCurrentNoteA
+@noRoot
 
     ;write the new frequency
     lda wCurrentNoteA
@@ -119,10 +148,10 @@ ProcessNotes:
  
     ;check if the note should actually be played
     ldx #15 ; max volume
-    lda #%10111111 ;mask for 1 3 4 6 5 * #
+    lda #%11111010 ;mask for 1 2 3 4 5 *
     bit wHeldKeys
     bne @Play
-    lda #%10001000 ;mask for 7 9
+    lda #%10100010 ;mask for 7 8 0
     bit wHeldKeys + 2
     bne  @Play
     ;play the note
@@ -139,7 +168,7 @@ InstrumentTable:
     .db $4, $c, $1, $6
 .ENDS
 
-.SECTION "interval tables", FREE, ALIGN 128
+.SECTION "interval tables", FREE, ALIGN 256
 IntervalTables:
 .INCBIN	"res/intervaltables.bin"
 .ENDS

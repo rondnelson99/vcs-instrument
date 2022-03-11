@@ -5,7 +5,7 @@
 PADVALUE := 0xFF
 
 # ROM name
-ROMNAME := boilerplate
+ROMNAME := instrument
 ROMEXT  := bin
 
 
