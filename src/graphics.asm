@@ -105,7 +105,12 @@ DrawDividers:
     ; configure graphics stuff for the two big numbers
     lda #%10
     sta CTRLPF ;scoreboard mode
-    lda #$42
+
+    lda #$c2 ;nice green
+    bit wCurrentNoteA
+    bmi @green
+    lda #$42 ; if the interval is out of tune, make it red
+@green
     sta COLUP0
     lda #$78
     sta COLUP1

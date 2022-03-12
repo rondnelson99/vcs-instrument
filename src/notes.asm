@@ -63,6 +63,20 @@ ProcessNotes:
 @noIncrement
     */
 
+    ; test for octave modifier (key 6)
+    ; all notes are up an octave when key 3 is held
+    lda #%00000100 ; mask for 3
+    bit wHeldKeys
+    beq @noOctaveModifier
+    ; use table to ascend octave
+    lda.w (IntervalTables + INTERVALS_OCTAVE),x
+    rol
+    cpx #$80 ; copy bit 7 (down modifier) from previous note
+    ror
+    tax ; now all future intervals will be up an octave
+@noOctaveModifier
+
+
     ; test for octave (key 3)
     lda #%00100000 ; mask for 1
     bit wPressedKeys
@@ -139,7 +153,8 @@ ProcessNotes:
     lda #%00000010 ; mask for 0 A
     bit wPressedKeys + 2
     beq @noRoot
-    stx wCurrentNoteA
+    lda wRootA
+    sta wCurrentNoteA
 @noRoot
 
     ;write the new frequency
