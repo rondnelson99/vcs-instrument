@@ -20,17 +20,102 @@ RenderScreen:
     ;input calls are spread throughout the drawing because they need to be at least 7 scanlines apart
     jsr ProcessInput1
 
-    ; configure graphics stuff
+    ;start with two-digit instrument divider indicators for the two voices
+    ; cofigure some stuff for that while waiting to position the players
+    sta WSYNC
+    lda #4 ;two copies, wide
+    sta NUSIZ0
+    sta NUSIZ1
+    lda #$65
+    sta COLUP0
+    sta COLUP1
+    lda #0
+    sta GRP0
+    sta GRP1
+    sta PF0
+    sta PF1
+    sta PF2
+
+    sta RESP0
+    sta RESP1
+
+    lda #1<<4 ; shift 1 px left
+    sta HMP1
+    
+    lda #>NumberData
+    sta wScreenDigitPtr + 1
+    sta wScreenDigitPtr2 + 1
+    sta wScreenDigitPtr3 + 1
+    sta wScreenDigitPtr4 + 1
+
+    ; set up the pointers for the two digit divider indicators
+    lda wCurrentNoteA
+    rol
+    rol
+    rol
+    rol ;get the instrument number into the bottom two bits
+    and #%11
+    tax
+    lda.w InstrumentDividerTable,x
+    and #$f0
+    lsr
+    sta wScreenDigitPtr
+    lda.w InstrumentDividerTable,x
+    and #$0f
+    asl
+    asl
+    asl
+    sta wScreenDigitPtr2
+
+    lda #0
+    sta WSYNC
+    sta HMOVE
+    sta VBLANK
+
+    ldy #7 
+DrawDividers:
+    lda #2
+    sta wTempLineCount
+@nextLine
+    sta WSYNC
+    lda (wScreenDigitPtr),y
+    sta GRP0
+    lda (wScreenDigitPtr2),y
+    sta GRP1 
+    lax (wScreenDigitPtr3),y
+    lda (wScreenDigitPtr4),y
+
+    SLEEP 12
+    stx GRP0
+    sta GRP1
+
+    dec wTempLineCount
+    bne @nextLine
+    dey
+    bne DrawDividers
+    
+    sta WSYNC
+    lda #$ff
+    sta VBLANK
+
+    lda #0
+    sta GRP0
+    sta GRP1 ; clear the player sprites
+
+    ; configure graphics stuff for the two big numbers
     lda #%10
     sta CTRLPF ;scoreboard mode
     lda #$42
     sta COLUP0
     lda #$78
     sta COLUP1
-    lda #0
-    sta PF0
-    sta PF1
-    sta PF2
+
+    lda #6 << 3
+    sta wScreenDigitPtr3
+    lda #9 << 3
+    sta wScreenDigitPtr4
+
+   
 
     ;set the first 2 digits
     lda wCurrentNoteA
@@ -55,18 +140,14 @@ RenderScreen:
     lda #9 << 3
     sta wScreenDigitPtr4
     
-    lda #>NumberData
-    sta wScreenDigitPtr + 1
-    sta wScreenDigitPtr2 + 1
-    sta wScreenDigitPtr3 + 1
-    sta wScreenDigitPtr4 + 1
+    
     
 
 
     lda #0
     sta VBLANK
     ldy #7 
-@drawnumbers
+DrawNumbers:
     lda #7
     sta wTempLineCount
 @nextLine
@@ -88,7 +169,7 @@ RenderScreen:
     dec wTempLineCount
     bne @nextLine
     dey
-    bne @drawnumbers
+    bne DrawNumbers
 
     ;enable VBLANK
     sta WSYNC

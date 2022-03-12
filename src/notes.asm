@@ -26,6 +26,17 @@ ProcessNotes:
     lda wRootA
     and #%01111111
     tax
+    ; set bit 7 if "down" is requested ( key 9)
+    lda #%00001000 ; mask for 9
+    bit wHeldKeys + 2
+    beq @not_down
+    lda #$ff
+    sbx #-$80 ; set bit 7 using undocumened sbx instruction
+
+
+@not_down
+
+
     /*; * and # are increment and decrement
     lda #%1 ; mask for #
     bit wPressedKeys
@@ -166,6 +177,11 @@ ProcessNotes:
 .SECTION "instrument table", FREE, ALIGN 4
 InstrumentTable:
     .db $4, $c, $1, $6
+.ENDS
+
+.SECTION "instrument divider table", FREE, ALIGN 4
+InstrumentDividerTable: ; used for display on screen. Stored as BCD
+    .db $02, $06, $15, $31
 .ENDS
 
 .SECTION "interval tables", FREE, ALIGN 256
