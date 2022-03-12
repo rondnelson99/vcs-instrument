@@ -95,8 +95,11 @@ DrawDividers:
     bne DrawDividers
     
     sta WSYNC
-    lda #$ff
+    lda #$02
     sta VBLANK
+
+    ; proceed with input processing
+    jsr ProcessInput2
 
     lda #0
     sta GRP0
@@ -181,12 +184,7 @@ DrawNumbers:
     lda #%10
     sta VBLANK
 
-    ;move on with input
-    jsr ProcessInput2
 
-    .rept 7
-    sta WSYNC
-    .endr
 
     jsr ProcessInput3
 

@@ -166,6 +166,16 @@ ProcessNotes:
     sta wCurrentNoteA
 @noRoot
 
+    ; check for "move root" key (key #)
+    lda #%00000001 ; mask for #
+    bit wHeldKeys
+    beq @noMoveRoot
+    lda wCurrentNoteA
+    ora #%10000000 ; always assume the root is in tune
+    sta wRootA
+@noMoveRoot
+
+
     ; AND the out of tune flag with the current note
     lda sOutOfTune
     ora #%01111111 ; we only care about bit 7
