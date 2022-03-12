@@ -8,7 +8,7 @@ Start	CLEAN_START
 	sta.w SWACNT
 	lda #%11101110 ;bottom row of both keypads
     sta.w SWCHA
-	lda #15 - 1 +$80
+	lda #31 - 1 + $80 + %01000000
 	sta wRootA
 
 

@@ -6,6 +6,10 @@ wCurrentNoteA: db ;bits 0-4 are period, bit 5,6 are instrument, bit 7 is note on
 wCurrentNoteB: db
 .ENDS
 
+.ENUM Scratchpad
+sOutOfTune: db ; bit 7 ANDed with wCurrentNoteA at the end so that the out of tune flag can be overridden
+.ENDE
+
 ;instruments: 0 = pure div2, 1 = pure div6, 2 = buzzy div15
 
 .enum 0
@@ -26,6 +30,10 @@ ProcessNotes:
     lda wRootA
     and #%01111111
     tax
+
+    lda #$80
+    sta sOutOfTune ; we're not out of tune yet
+
     ; set bit 7 if "down" is requested ( key 9)
     lda #%00001000 ; mask for 9
     bit wHeldKeys + 2
@@ -71,6 +79,7 @@ ProcessNotes:
     ; use table to ascend octave
     lda.w (IntervalTables + INTERVALS_OCTAVE),x
     rol
+    ror sOutOfTune ; of the octave was out of tune, set the out of tune flag
     cpx #$80 ; copy bit 7 (down modifier) from previous note
     ror
     tax ; now all future intervals will be up an octave
@@ -157,8 +166,13 @@ ProcessNotes:
     sta wCurrentNoteA
 @noRoot
 
-    ;write the new frequency
-    lda wCurrentNoteA
+    ; AND the out of tune flag with the current note
+    lda sOutOfTune
+    ora #%01111111 ; we only care about bit 7
+    and wCurrentNoteA
+    sta wCurrentNoteA
+
+    ; write the new note to the note 
     sta AUDF0
 
     ;isolate the instrument
